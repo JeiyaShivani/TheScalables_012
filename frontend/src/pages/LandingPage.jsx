@@ -18,7 +18,7 @@ const LandingPage = () => {
                 </div>
 
                 <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight sm:text-6xl mb-4">
-                    MakerNest
+                    MakerNesttttttttttt
                 </h1>
                 <p className="mt-4 text-xl text-gray-500 max-w-2xl mx-auto mb-10">
                     Connect local artisans with buyers. High quality, handmade goods straight from the creator's hands to your home.
