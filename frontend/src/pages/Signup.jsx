@@ -11,7 +11,7 @@ const Signup = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { login } = useAuth();
+    const { register } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -20,26 +20,14 @@ const Signup = () => {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:5001/signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password, role })
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || 'Signup failed');
-            }
-
-            login(data);
-            if (data.role === 'vendor') {
-                navigate('/vendor');
-            } else {
-                navigate('/customer');
-            }
+            await register(name, email, password, role);
+            // Cognito typically requires email verification before login is possible.
+            // Redirect to the login page with a success message.
+            alert('Registration successful! Please verify your email (if required) and log in.');
+            navigate('/login');
         } catch (err) {
-            setError(err.message);
+            console.error('Signup error', err);
+            setError(err.message || 'Signup failed');
         } finally {
             setLoading(false);
         }

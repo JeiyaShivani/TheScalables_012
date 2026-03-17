@@ -8,6 +8,17 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ProtectedRoute from './components/ProtectedRoute';
 
+import { Amplify } from "aws-amplify";
+
+Amplify.configure({
+    Auth: {
+        Cognito: {
+            userPoolId: "ap-south-1_QWHkZVL2m",
+            userPoolClientId: "1gq5s6tl2rsiq5lkc8kp5mc0h8"
+        }
+    }
+});
+
 function App() {
     return (
         <AuthProvider>
@@ -18,7 +29,7 @@ function App() {
                     <Route path="/signup" element={<Signup />} />
 
                     <Route
-                        path="/vendor"
+                        path="/vendopr"
                         element={
                             <ProtectedRoute allowedRole="vendor">
                                 <VendorDashboard />

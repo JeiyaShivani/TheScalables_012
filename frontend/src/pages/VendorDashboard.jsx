@@ -6,11 +6,14 @@ const VendorDashboard = () => {
     const [products, setProducts] = useState([]);
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
+    const [imageFile, setImageFile] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
     const fetchProducts = async () => {
         try {
-            const res = await fetch('http://localhost:5001/products');
+            const res = await fetch(`${API_URL}/products`);
             const data = await res.json();
             setProducts(data);
         } catch (err) {
@@ -28,15 +31,36 @@ const VendorDashboard = () => {
 
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:5001/products', {
+            let imageUrl = null;
+
+            // 1. If there is an image, get Presigned URL from Backend and upload to S3 directly
+            if (imageFile) {
+                const urlRes = await fetch(`${API_URL}/upload-url?filename=${encodeURIComponent(imageFile.name)}&filetype=${encodeURIComponent(imageFile.type)}`);
+                const { uploadUrl, objectUrl } = await urlRes.json();
+
+                if (!uploadUrl) throw new Error("Failed to get S3 upload URL");
+
+                // Upload directly to S3
+                await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': imageFile.type },
+                    body: imageFile
+                });
+
+                imageUrl = objectUrl;
+            }
+
+            // 2. Submit product details to DynamoDB
+            const res = await fetch(`${API_URL}/products`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, price })
+                body: JSON.stringify({ name, price, imageUrl })
             });
 
             if (res.ok) {
                 setName('');
                 setPrice('');
+                setImageFile(null);
                 fetchProducts();
             }
         } catch (err) {
@@ -94,6 +118,18 @@ const VendorDashboard = () => {
                                     />
                                 </div>
 
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Product Image (Optional)
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setImageFile(e.target.files[0])}
+                                        className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 transition-colors"
+                                    />
+                                </div>
+
                                 <button
                                     type="submit"
                                     disabled={loading}
@@ -125,6 +161,9 @@ const VendorDashboard = () => {
                                         <div key={product.id} className="border border-gray-100 bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow">
                                             <div className="font-semibold text-gray-900">{product.name}</div>
                                             <div className="text-brand-600 font-bold mt-1">${Number(product.price).toFixed(2)}</div>
+                                            {product.imageUrl && (
+                                                <img src={product.imageUrl} alt={product.name} className="mt-2 h-24 w-full object-cover rounded-md" />
+                                            )}
                                             <div className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-200 truncate">
                                                 ID: {product.id}
                                             </div>

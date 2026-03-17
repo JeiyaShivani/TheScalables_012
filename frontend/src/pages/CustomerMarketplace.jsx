@@ -8,6 +8,8 @@ const CustomerMarketplace = () => {
     const [newReview, setNewReview] = useState('');
     const [selectedProductId, setSelectedProductId] = useState(null);
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -15,8 +17,8 @@ const CustomerMarketplace = () => {
     const fetchData = async () => {
         try {
             const [prodRes, revRes] = await Promise.all([
-                fetch('http://localhost:5001/products'),
-                fetch('http://localhost:5001/reviews')
+                fetch(`${API_URL}/products`),
+                fetch(`${API_URL}/reviews`)
             ]);
             const prodData = await prodRes.json();
             const revData = await revRes.json();
@@ -37,7 +39,7 @@ const CustomerMarketplace = () => {
         if (!newReview) return;
 
         try {
-            const res = await fetch('http://localhost:5001/reviews', {
+            const res = await fetch(`${API_URL}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ comment: newReview, productId })
@@ -83,10 +85,19 @@ const CustomerMarketplace = () => {
                             const productReviews = getProductReviews(product.id);
                             return (
                                 <div key={product.id} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all border border-gray-100 overflow-hidden flex flex-col group">
-                                    <div className="h-48 bg-gradient-to-br from-brand-100 to-white flex flex-col items-center justify-center border-b border-gray-50 group-hover:scale-[1.02] transition-transform origin-bottom duration-300">
-                                        <Star className="w-12 h-12 text-brand-300 mb-2" />
-                                        <span className="text-xs font-semibold text-brand-600 uppercase tracking-widest">Handcrafted</span>
-                                    </div>
+                                    {product.imageUrl ? (
+                                        <div className="h-48 border-b border-gray-50 overflow-hidden relative">
+                                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-300" />
+                                            <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-brand-600 shadow-sm uppercase tracking-wider">
+                                                Handcrafted
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="h-48 bg-gradient-to-br from-brand-100 to-white flex flex-col items-center justify-center border-b border-gray-50 group-hover:scale-[1.02] transition-transform origin-bottom duration-300">
+                                            <Star className="w-12 h-12 text-brand-300 mb-2" />
+                                            <span className="text-xs font-semibold text-brand-600 uppercase tracking-widest">Handcrafted</span>
+                                        </div>
+                                    )}
 
                                     <div className="p-6 flex-1 flex flex-col">
                                         <div className="flex justify-between items-start mb-2">

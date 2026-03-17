@@ -18,26 +18,15 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:5001/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || 'Login failed');
-            }
-
-            login(data);
-            if (data.role === 'vendor') {
+            const loggedInUser = await login(email, password);
+            if (loggedInUser?.role === 'vendor') {
                 navigate('/vendor');
             } else {
                 navigate('/customer');
             }
         } catch (err) {
-            setError(err.message);
+            console.error('Login error', err);
+            setError(err.message || 'Login failed');
         } finally {
             setLoading(false);
         }
