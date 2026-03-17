@@ -1,42 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { PlusCircle, Package } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const VendorDashboard = () => {
+    const { user } = useAuth();
     const [products, setProducts] = useState([]);
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
+    const [image, setImage] = useState('');
     const [loading, setLoading] = useState(false);
 
     const fetchProducts = async () => {
         try {
             const res = await fetch('http://localhost:5001/products');
             const data = await res.json();
-            setProducts(data);
+            // Filter by vendorId
+            const vendorProducts = data.filter(p => p.vendorId === user?.email);
+            setProducts(vendorProducts);
         } catch (err) {
             console.error('Error fetching products:', err);
         }
     };
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        if (user?.email) {
+            fetchProducts();
+        }
+    }, [user?.email]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!name || !price) return;
+        if (!name || !price || !user?.email) return;
 
         setLoading(true);
         try {
             const res = await fetch('http://localhost:5001/products', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, price })
+                body: JSON.stringify({ name, price, image, vendorId: user.email })
             });
 
             if (res.ok) {
                 setName('');
                 setPrice('');
+                setImage('');
                 fetchProducts();
             }
         } catch (err) {
@@ -94,6 +102,20 @@ const VendorDashboard = () => {
                                     />
                                 </div>
 
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Product Image URL
+                                    </label>
+                                    <input
+                                        type="url"
+                                        value={image}
+                                        onChange={(e) => setImage(e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow"
+                                        placeholder="https://example.com/image.jpg"
+                                        required
+                                    />
+                                </div>
+
                                 <button
                                     type="submit"
                                     disabled={loading}
@@ -123,6 +145,9 @@ const VendorDashboard = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {products.map((product) => (
                                         <div key={product.id} className="border border-gray-100 bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow">
+                                            {product.image && (
+                                                <img src={product.image} alt={product.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                                            )}
                                             <div className="font-semibold text-gray-900">{product.name}</div>
                                             <div className="text-brand-600 font-bold mt-1">${Number(product.price).toFixed(2)}</div>
                                             <div className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-200 truncate">

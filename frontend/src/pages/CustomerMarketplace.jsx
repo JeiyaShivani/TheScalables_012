@@ -83,10 +83,16 @@ const CustomerMarketplace = () => {
                             const productReviews = getProductReviews(product.id);
                             return (
                                 <div key={product.id} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all border border-gray-100 overflow-hidden flex flex-col group">
-                                    <div className="h-48 bg-gradient-to-br from-brand-100 to-white flex flex-col items-center justify-center border-b border-gray-50 group-hover:scale-[1.02] transition-transform origin-bottom duration-300">
-                                        <Star className="w-12 h-12 text-brand-300 mb-2" />
-                                        <span className="text-xs font-semibold text-brand-600 uppercase tracking-widest">Handcrafted</span>
-                                    </div>
+                                    {product.image ? (
+                                        <div className="h-48 w-full border-b border-gray-50 overflow-hidden">
+                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform origin-bottom duration-300" />
+                                        </div>
+                                    ) : (
+                                        <div className="h-48 bg-gradient-to-br from-brand-100 to-white flex flex-col items-center justify-center border-b border-gray-50 group-hover:scale-[1.02] transition-transform origin-bottom duration-300">
+                                            <Star className="w-12 h-12 text-brand-300 mb-2" />
+                                            <span className="text-xs font-semibold text-brand-600 uppercase tracking-widest">Handcrafted</span>
+                                        </div>
+                                    )}
 
                                     <div className="p-6 flex-1 flex flex-col">
                                         <div className="flex justify-between items-start mb-2">
