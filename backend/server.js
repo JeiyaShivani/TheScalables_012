@@ -11,6 +11,7 @@ app.use(express.json());
 let products = [];
 let reviews = [];
 let users = [];
+let orders = [];
 
 // Future AWS integration points notes:
 // products -> Replace array with DynamoDB table scan/put
@@ -88,7 +89,7 @@ app.get('/reviews', (req, res) => {
 
 // POST /reviews
 app.post('/reviews', (req, res) => {
-  const { comment, productId } = req.body;
+  const { comment, productId, customerName } = req.body;
   if (!comment) {
     return res.status(400).json({ error: 'Comment is required' });
   }
@@ -97,11 +98,39 @@ app.post('/reviews', (req, res) => {
     id: Date.now().toString(),
     productId,
     comment,
+    customerName: customerName || 'Anonymous',
     date: new Date().toISOString()
   };
 
   reviews.push(newReview);
   res.status(201).json(newReview);
+});
+
+// GET /orders
+app.get('/orders', (req, res) => {
+  res.json(orders);
+});
+
+// POST /orders
+app.post('/orders', (req, res) => {
+  const { productId, productName, customerName, vendorId } = req.body;
+  
+  if (!productId || !productName || !customerName || !vendorId) {
+    return res.status(400).json({ error: 'All order fields are required' });
+  }
+
+  const newOrder = {
+    id: Date.now().toString(),
+    productId,
+    productName,
+    customerName,
+    vendorId,
+    status: 'Placed',
+    date: new Date().toISOString()
+  };
+
+  orders.push(newOrder);
+  res.status(201).json(newOrder);
 });
 
 app.listen(PORT, () => {

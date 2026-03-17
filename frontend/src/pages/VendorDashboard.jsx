@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 const VendorDashboard = () => {
     const { user } = useAuth();
     const [products, setProducts] = useState([]);
+    const [reviews, setReviews] = useState([]);
+    const [orders, setOrders] = useState([]);
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
     const [image, setImage] = useState('');
@@ -13,13 +15,24 @@ const VendorDashboard = () => {
 
     const fetchProducts = async () => {
         try {
-            const res = await fetch('http://localhost:5001/products');
-            const data = await res.json();
+            const [prodRes, revRes, ordRes] = await Promise.all([
+                fetch('http://localhost:5001/products'),
+                fetch('http://localhost:5001/reviews'),
+                fetch('http://localhost:5001/orders')
+            ]);
+            const prodData = await prodRes.json();
+            const revData = await revRes.json();
+            const ordData = await ordRes.json();
+
             // Filter by vendorId
-            const vendorProducts = data.filter(p => p.vendorId === user?.email);
+            const vendorProducts = prodData.filter(p => p.vendorId === user?.email);
+            const vendorOrders = ordData.filter(o => o.vendorId === user?.email);
+
             setProducts(vendorProducts);
+            setReviews(revData);
+            setOrders(vendorOrders);
         } catch (err) {
-            console.error('Error fetching products:', err);
+            console.error('Error fetching data:', err);
         }
     };
 
@@ -143,7 +156,9 @@ const VendorDashboard = () => {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {products.map((product) => (
+                                    {products.map((product) => {
+                                        const productReviews = reviews.filter(r => r.productId === product.id);
+                                        return (
                                         <div key={product.id} className="border border-gray-100 bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow">
                                             {product.image && (
                                                 <img src={product.image} alt={product.name} className="w-full h-32 object-cover rounded-lg mb-3" />
@@ -153,12 +168,57 @@ const VendorDashboard = () => {
                                             <div className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-200 truncate">
                                                 ID: {product.id}
                                             </div>
+
+                                            <div className="mt-4 pt-3 border-t border-gray-200">
+                                                <h4 className="text-sm font-semibold text-gray-700 mb-2">Reviews:</h4>
+                                                {productReviews.length > 0 ? (
+                                                    <div className="space-y-2">
+                                                        {productReviews.map(r => (
+                                                            <div key={r.id} className="text-sm text-gray-600 flex flex-col">
+                                                                <span className="font-medium text-gray-800">{r.customerName}:</span> 
+                                                                <span className="italic">"{r.comment}"</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-gray-400 italic">No reviews yet.</p>
+                                                )}
+                                            </div>
                                         </div>
-                                    ))}
+                                    )})}
                                 </div>
                             )}
                         </div>
                     </div>
+                </div>
+
+                {/* Orders Section */}
+                <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                        <Package className="w-6 h-6 text-brand-500" />
+                        Orders for Your Products
+                    </h3>
+
+                    {orders.length === 0 ? (
+                        <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                            <p className="text-gray-500 font-medium">No orders yet.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {orders.map((order) => (
+                                <div key={order.id} className="border border-gray-100 bg-gray-50 rounded-xl p-5 hover:shadow-md transition-shadow">
+                                    <div className="text-lg font-bold text-gray-900 mb-1">{order.productName}</div>
+                                    <div className="text-sm text-gray-600 mb-3">Ordered by <span className="font-semibold">{order.customerName}</span></div>
+                                    <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-100 text-brand-800">
+                                        Status: {order.status}
+                                    </div>
+                                    <div className="text-xs text-gray-400 mt-4 pt-4 border-t border-gray-200 truncate">
+                                        Order ID: {order.id}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </Layout>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { ShoppingCart, MessageSquare, Star, Info } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const CustomerMarketplace = () => {
+    const { user } = useAuth();
     const [products, setProducts] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [newReview, setNewReview] = useState('');
@@ -28,8 +30,25 @@ const CustomerMarketplace = () => {
         }
     };
 
-    const handleOrder = (productName) => {
-        alert(`Order placed successfully for: ${productName}`);
+    const handleOrder = async (product) => {
+        try {
+            const res = await fetch('http://localhost:5001/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: product.id,
+                    productName: product.name,
+                    customerName: user?.name || user?.email || 'Anonymous',
+                    vendorId: product.vendorId
+                })
+            });
+
+            if (res.ok) {
+                alert('Order placed successfully');
+            }
+        } catch (err) {
+            console.error('Error placing order:', err);
+        }
     };
 
     const handleAddReview = async (e, productId) => {
@@ -40,7 +59,11 @@ const CustomerMarketplace = () => {
             const res = await fetch('http://localhost:5001/reviews', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ comment: newReview, productId })
+                body: JSON.stringify({ 
+                    comment: newReview, 
+                    productId,
+                    customerName: user?.name || user?.email || 'Anonymous' 
+                })
             });
 
             if (res.ok) {
@@ -101,7 +124,7 @@ const CustomerMarketplace = () => {
                                         </div>
 
                                         <button
-                                            onClick={() => handleOrder(product.name)}
+                                            onClick={() => handleOrder(product)}
                                             className="mt-4 w-full bg-brand-600 text-white font-medium py-3 px-4 rounded-xl hover:bg-brand-700 hover:shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 duration-200"
                                         >
                                             <ShoppingCart className="w-5 h-5" />
