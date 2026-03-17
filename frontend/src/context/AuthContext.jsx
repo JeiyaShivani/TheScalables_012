@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getCurrentUser, signIn, signOut as amplifySignOut, signUp } from 'aws-amplify/auth';
+import { getCurrentUser, signIn, signOut as amplifySignOut, signUp, confirmSignIn, fetchAuthSession } from 'aws-amplify/auth';
 
 const AuthContext = createContext(null);
 
@@ -11,31 +11,96 @@ export const AuthProvider = ({ children }) => {
         checkUser();
     }, []);
 
+    // const checkUser = async () => {
+    //     try {
+    //         const currentUser = await getCurrentUser();
+    //         const session = await fetchAuthSession();
+            
+    //         // Reconstruct a user object similar to our original mock, extracting custom attributes
+    //         const idTokenPayload = session.tokens?.idToken?.payload;
+            
+    //         setUser({
+    //             id: currentUser.userId,
+    //             name: currentUser.username,
+    //             role: idTokenPayload?.['custom:role'] || 'customer'
+    //         });
+    //     } catch (error) {
+    //         setUser(null);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
     const checkUser = async () => {
         try {
             const currentUser = await getCurrentUser();
-            
-            // Reconstruct a user object similar to our original mock, extracting custom attributes if needed
-            setUser({
-                id: currentUser.userId,
-                name: currentUser.username,
-                // The role would typically come from custom attributes in a real Cognito setup
-                role: 'vendor' // Defaulting for simple MVP transition, ideally parse from ID token claims
-            });
-        } catch (error) {
-            setUser(null);
-        } finally {
-            setLoading(false);
-        }
+            const session = await fetchAuthSession();
+            const payload = session.tokens?.idToken?.payload;
+
+            const userData = {
+            id: currentUser.userId,
+            name: currentUser.username,
+            role: payload?.['custom:role'] || 'customer'
+        };
+
+        setUser(userData);
+        return userData; // 👈 ADD THIS
+    } catch {
+        setUser(null);
+        return null;
+    } finally {
+        setLoading(false);
+    }
     };
 
     const login = async (email, password) => {
         const result = await signIn({ username: email, password });
+
+        console.log("LOGIN RESULT:", result); // 🔥 MUST KEEP
+
+        if (result.isSignedIn) {
+            await checkUser();
+
+            // ⚠️ IMPORTANT: return fresh user AFTER state update
+            const session = await fetchAuthSession();
+            const payload = session.tokens?.idToken?.payload;
+
+            return {
+                role: payload?.['custom:role'] || 'customer'
+            };
+        }
+
+        const step = result.nextStep?.signInStep;
+
+        if (step === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+            return { nextStep: step };
+        }
+
+        if (step === 'CONFIRM_SIGN_UP') {
+            throw new Error('Please verify your email before logging in.');
+        }
+
+        if (step === 'RESET_PASSWORD') {
+            throw new Error('Password reset required.');
+        }
+
+        console.log("UNHANDLED STEP:", step);
+        throw new Error(`Unhandled sign-in step: ${step}`);
+    };
+
+    const confirmNewPassword = async (newPassword) => {
+        const result = await confirmSignIn({
+        challengeResponse: newPassword,
+        options: {
+            userAttributes: {
+                name: "User" // or store actual name from signup
+            }
+        }
+    });
         if (result.isSignedIn) {
             await checkUser();
             return user;
         }
-        throw new Error('Sign in requires further steps');
+        throw new Error('Failed to confirm password');
     };
 
     const register = async (name, email, password, role) => {
@@ -46,7 +111,7 @@ export const AuthProvider = ({ children }) => {
                 userAttributes: {
                     email,
                     name,
-                    "custom:role": role
+                    'custom:role': role
                 }
             }
         });
@@ -64,7 +129,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout }}>
+        <AuthContext.Provider value={{ user, login, register, logout, confirmNewPassword }}>
             {children}
         </AuthContext.Provider>
     );

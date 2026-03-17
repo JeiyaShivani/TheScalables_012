@@ -1,16 +1,34 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Store, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getCurrentUser } from 'aws-amplify/auth';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [awaitingNewPassword, setAwaitingNewPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { login } = useAuth();
+    const { login, confirmNewPassword } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+    const checkAlreadyLoggedIn = async () => {
+        try {
+            const user = await getCurrentUser();
+            if (user) {
+                navigate('/customer'); // or detect role if needed
+            }
+        } catch {
+            // not logged in → do nothing
+        }
+    };
+
+    checkAlreadyLoggedIn();
+}, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -18,8 +36,26 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const loggedInUser = await login(email, password);
-            if (loggedInUser?.role === 'vendor') {
+            if (awaitingNewPassword) {
+                const loggedInUser = await confirmNewPassword(newPassword);
+                if (loggedInUser?.role === 'vendor') {
+                    navigate('/vendor');
+                } else {
+                    navigate('/customer');
+                }
+                return;
+            }
+
+            const response = await login(email, password);
+            
+            if (response?.nextStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+                setAwaitingNewPassword(true);
+                setError('');
+                return;
+            }
+
+            // Normal login
+            if (response?.role === 'vendor') {
                 navigate('/vendor');
             } else {
                 navigate('/customer');
@@ -59,46 +95,72 @@ const Login = () => {
                             </div>
                         )}
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Email address</label>
-                            <div className="mt-1 relative rounded-md shadow-sm">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="h-5 w-5 text-gray-400" />
+                        {awaitingNewPassword ? (
+                            <>
+                                <div className="bg-amber-50 text-amber-800 p-3 rounded-lg text-sm text-center font-medium border border-amber-200">
+                                    Your account requires a password change upon first login. Please enter a new password below.
                                 </div>
-                                <input
-                                    type="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow"
-                                    placeholder="you@example.com"
-                                />
-                            </div>
-                        </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">New Password</label>
+                                    <div className="mt-1 relative rounded-md shadow-sm">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Lock className="h-5 w-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Email address</label>
+                                    <div className="mt-1 relative rounded-md shadow-sm">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Mail className="h-5 w-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="email"
+                                            required
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow"
+                                            placeholder="you@example.com"
+                                        />
+                                    </div>
+                                </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Password</label>
-                            <div className="mt-1 relative rounded-md shadow-sm">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-gray-400" />
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Password</label>
+                                    <div className="mt-1 relative rounded-md shadow-sm">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Lock className="h-5 w-5 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="password"
+                                            required
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
                                 </div>
-                                <input
-                                    type="password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow"
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                        </div>
+                            </>
+                        )}
 
                         <button
                             type="submit"
                             disabled={loading}
                             className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 disabled:opacity-70 transition-colors"
                         >
-                            {loading ? 'Signing in...' : 'Sign in'}
+                            {loading ? 'Processing...' : (awaitingNewPassword ? 'Change Password & Login' : 'Sign in')}
                         </button>
                     </form>
                 </div>

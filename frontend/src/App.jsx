@@ -29,7 +29,7 @@ function App() {
                     <Route path="/signup" element={<Signup />} />
 
                     <Route
-                        path="/vendopr"
+                        path="/vendor"
                         element={
                             <ProtectedRoute allowedRole="vendor">
                                 <VendorDashboard />

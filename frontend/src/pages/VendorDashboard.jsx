@@ -15,7 +15,7 @@ const VendorDashboard = () => {
         try {
             const res = await fetch(`${API_URL}/products`);
             const data = await res.json();
-            setProducts(data);
+            setProducts(data.Items || data);
         } catch (err) {
             console.error('Error fetching products:', err);
         }
@@ -158,14 +158,14 @@ const VendorDashboard = () => {
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {products.map((product) => (
-                                        <div key={product.id} className="border border-gray-100 bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow">
+                                        <div key={product.productId} className="border border-gray-100 bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow">
                                             <div className="font-semibold text-gray-900">{product.name}</div>
                                             <div className="text-brand-600 font-bold mt-1">${Number(product.price).toFixed(2)}</div>
                                             {product.imageUrl && (
                                                 <img src={product.imageUrl} alt={product.name} className="mt-2 h-24 w-full object-cover rounded-md" />
                                             )}
                                             <div className="text-xs text-gray-400 mt-3 pt-3 border-t border-gray-200 truncate">
-                                                ID: {product.id}
+                                                ID: {product.productId}
                                             </div>
                                         </div>
                                     ))}
