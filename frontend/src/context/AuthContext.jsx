@@ -15,10 +15,10 @@ export const AuthProvider = ({ children }) => {
     //     try {
     //         const currentUser = await getCurrentUser();
     //         const session = await fetchAuthSession();
-            
+
     //         // Reconstruct a user object similar to our original mock, extracting custom attributes
     //         const idTokenPayload = session.tokens?.idToken?.payload;
-            
+
     //         setUser({
     //             id: currentUser.userId,
     //             name: currentUser.username,
@@ -35,21 +35,23 @@ export const AuthProvider = ({ children }) => {
             const currentUser = await getCurrentUser();
             const session = await fetchAuthSession();
             const payload = session.tokens?.idToken?.payload;
-
+            console.log("CURRENT USER:", currentUser.userId);
+            console.log("SESSION:", session);
+            console.log("PAYLOAD:", payload);
             const userData = {
-            id: currentUser.userId,
-            name: currentUser.username,
-            role: payload?.['custom:role'] || 'customer'
-        };
+                id: currentUser.userId,
+                name: currentUser.username,
+                role: payload?.['custom:role'] || 'customer'
+            };
 
-        setUser(userData);
-        return userData; // 👈 ADD THIS
-    } catch {
-        setUser(null);
-        return null;
-    } finally {
-        setLoading(false);
-    }
+            setUser(userData);
+            return userData; // 👈 ADD THIS
+        } catch {
+            setUser(null);
+            return null;
+        } finally {
+            setLoading(false);
+        }
     };
 
     const login = async (email, password) => {
@@ -89,13 +91,13 @@ export const AuthProvider = ({ children }) => {
 
     const confirmNewPassword = async (newPassword) => {
         const result = await confirmSignIn({
-        challengeResponse: newPassword,
-        options: {
-            userAttributes: {
-                name: "User" // or store actual name from signup
+            challengeResponse: newPassword,
+            options: {
+                userAttributes: {
+                    name: "User" // or store actual name from signup
+                }
             }
-        }
-    });
+        });
         if (result.isSignedIn) {
             await checkUser();
             return user;

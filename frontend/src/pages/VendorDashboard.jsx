@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { PlusCircle, Package } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const VendorDashboard = () => {
     const [products, setProducts] = useState([]);
@@ -8,12 +9,13 @@ const VendorDashboard = () => {
     const [price, setPrice] = useState('');
     const [imageFile, setImageFile] = useState(null);
     const [loading, setLoading] = useState(false);
+    const { user } = useAuth();
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
     const fetchProducts = async () => {
         try {
-            const res = await fetch(`${API_URL}/products`);
+            const res = await fetch("https://odftk2tlo5.execute-api.ap-south-1.amazonaws.com/default/products");
             const data = await res.json();
             setProducts(data.Items || data);
         } catch (err) {
@@ -54,7 +56,12 @@ const VendorDashboard = () => {
             const res = await fetch(`${API_URL}/products`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, price, imageUrl })
+                body: JSON.stringify({
+                    name,
+                    price,
+                    imageUrl,
+                    vendorId: user?.id
+                })
             });
 
             if (res.ok) {
@@ -158,7 +165,7 @@ const VendorDashboard = () => {
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {products.map((product) => (
-                                        <div key={product.productId} className="border border-gray-100 bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow">
+                                        <div key={product.id} className="border border-gray-100 bg-gray-50 rounded-xl p-4 hover:shadow-md transition-shadow">
                                             <div className="font-semibold text-gray-900">{product.name}</div>
                                             <div className="text-brand-600 font-bold mt-1">${Number(product.price).toFixed(2)}</div>
                                             {product.imageUrl && (

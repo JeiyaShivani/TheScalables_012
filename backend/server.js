@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
@@ -9,15 +8,23 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const serverless = require('serverless-http');
 
 const app = express();
+const users = [];
 const PORT = process.env.PORT || 5001;
 
-app.use(cors());
+app.use((req, res, next) => {
+  req.url = req.url.replace(/^\/default/, '');
+  next();
+});
+
+app.use(cors({
+  origin: '*',
+}));
 app.use(express.json());
 
 // --- AWS Configuration ---
 // These will automatically use credentials from IAM Roles when deployed to Lambda
 // or from environment variables/credentials file when running locally.
-const region = process.env.AWS_REGION || 'us-east-1';
+const region = process.env.AWS_REGION || 'ap-south-1';
 
 const ddbClient = new DynamoDBClient({ region });
 const docClient = DynamoDBDocumentClient.from(ddbClient);
@@ -26,7 +33,23 @@ const s3Client = new S3Client({ region });
 const PRODUCTS_TABLE = process.env.DYNAMODB_PRODUCTS_TABLE || 'Products';
 const REVIEWS_TABLE = process.env.DYNAMODB_REVIEWS_TABLE || 'Reviews';
 const ORDERS_TABLE = process.env.DYNAMODB_ORDERS_TABLE || 'Orders';
-const S3_BUCKET = process.env.S3_IMAGE_BUCKET || 'makernest-product-images';
+const S3_BUCKET = process.env.S3_IMAGE_BUCKET || 'makernest-demo-images';
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  next();
+});
+
+app.get('/', (req, res) => {
+  res.send('Marketplace Backend is running 🚀');
+});
 
 // POST /signup
 app.post('/signup', (req, res) => {
@@ -126,7 +149,7 @@ app.get('/upload-url', async (req, res) => {
     const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 }); // 5 minutes
     res.json({
       uploadUrl: presignedUrl,
-      objectUrl: `https://${S3_BUCKET}.s3.${region}.amazonaws.com/${key}`
+      objectUrl: `https://d815yhlt4my01.cloudfront.net/${key}`
     });
   } catch (error) {
     console.error('S3 Presign Error:', error);
@@ -212,12 +235,17 @@ app.post('/orders', async (req, res) => {
 });
 
 // Only start the server locally if not running in Lambda
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
-    console.log('Ensure you have your AWS credentials exported or ~/.aws/credentials configured.');
-  });
-}
+
 
 // Export for AWS Lambda API Gateway integration
-module.exports.handler = serverless(app);
+module.exports.handler = serverless(app, {
+  request: function (req, event) {
+    req.apiGateway = event;
+  }
+});
+
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server running locally on http://localhost:${PORT}`);
+  });
+}
