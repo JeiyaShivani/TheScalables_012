@@ -213,9 +213,9 @@ app.post('/orders', async (req, res) => {
 
 // Only start the server locally if not running in Lambda
 if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
-  });
+  app.listen(5001, '0.0.0.0', () => {
+  console.log('Backend server running on port 5001');
+});;
 
 }
 
