@@ -10,7 +10,7 @@ const serverless = require('serverless-http');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-
+const users=[];
 app.use(cors());
 app.use(express.json());
 

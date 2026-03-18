@@ -1,0 +1,12 @@
+service: makernest-api
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1
+
+functions:
+  app:
+    handler: server.handler
+    events:
+      - httpApi: '*'
