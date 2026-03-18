@@ -29,6 +29,9 @@ const ORDERS_TABLE = process.env.DYNAMODB_ORDERS_TABLE || 'Orders';
 const S3_BUCKET = process.env.S3_IMAGE_BUCKET || 'makernest-product-images';
 
 // POST /signup
+app.get('/', (req, res) => {
+  res.send('Backend running');
+});
 app.post('/signup', (req, res) => {
   const { name, email, password, role } = req.body;
   if (!name || !email || !password || !role) {
