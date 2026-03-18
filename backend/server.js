@@ -215,8 +215,8 @@ app.post('/orders', async (req, res) => {
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
-    console.log('Ensure you have your AWS credentials exported or ~/.aws/credentials configured.');
   });
+
 }
 
 // Export for AWS Lambda API Gateway integration
