@@ -219,5 +219,4 @@ if (process.env.NODE_ENV !== 'production') {
 
 }
 
-// Export for AWS Lambda API Gateway integration
-module.exports.handler = serverless(app);
+
